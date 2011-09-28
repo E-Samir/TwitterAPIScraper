@@ -158,7 +158,6 @@ class DmozSpider(BaseSpider):
        f = open('final.json','w')
        f.write(json.dumps(self.raw, sort_keys=True, indent=4))
        f.close()
-       print "goodbye cruel world"
 
    def sanitize(self, desc):
        
@@ -190,6 +189,15 @@ class DmozSpider(BaseSpider):
        return value
 
 
+   def fixURL(self, value):
+       value = value.replace(":user", "USER").replace(":list_id","LIST_ID").replace(":id", "ID").replace("format","json")
+       return value
+
+   def fixName(self, value):
+       value = value.replace(":user", "user").replace(":list_id","list_id").replace(":id", "id")
+       return value
+
+
    def parse(self, response):
        print "processing : %s" %(self.currentUrl)
        hxs = HtmlXPathSelector(response)
@@ -200,6 +208,7 @@ class DmozSpider(BaseSpider):
 
        method_names = hxs.select("//h1[@id='title']/text()").extract()
        base_urls = hxs.select("//div[@class='odd']/text()").re("http.*")
+       
        parameters = hxs.select("//div[@class='parameter']/span/text()").extract()
        required_list = hxs.select("//div[@class='parameter']/span[@class='param']/span/text()").extract() 
        descriptions = hxs.select("//div[@class='parameter']/p/text()").extract()
@@ -213,7 +222,7 @@ class DmozSpider(BaseSpider):
 
        obj = {} 
        names = method_names[0].split(' ')
-       obj["name"] = names[1].replace("/", "_");
+       obj["name"] = self.fixName(names[1].replace("/", "_"));
        if(names[0] == "POST"):
            obj["require_post"] = True
        else:
@@ -221,7 +230,7 @@ class DmozSpider(BaseSpider):
 
        obj["description"] = descriptions[0].strip()
        obj["parameters"] = parameters
-       obj["base_url"] = base_urls[0].strip()
+       obj["base_url"] = self.fixURL(base_urls[0].strip())
        obj["required"] = updated_required_list
        #print "parent: %s" %(parent)
        #print json.dumps(obj, sort_keys=True, indent=4)
