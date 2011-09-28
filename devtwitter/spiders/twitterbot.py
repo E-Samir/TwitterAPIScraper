@@ -3,6 +3,9 @@ from scrapy.spider import BaseSpider
 from scrapy.selector import HtmlXPathSelector
 import re
 import json
+from HTMLParser import HTMLParser
+
+
 
 class DmozSpider(BaseSpider):
    currentUrl = ""
@@ -181,6 +184,10 @@ class DmozSpider(BaseSpider):
                return item
        return None
        #print "searching for: %s"%(parent_name)
+   def html_cleanup(self,value):
+       value = HTMLParser.unescape.__func__(HTMLParser, value.lower())
+       value = value.replace("&", "and").replace(" ", "_")
+       return value
 
 
    def parse(self, response):
@@ -189,6 +196,8 @@ class DmozSpider(BaseSpider):
 
        parent_names = hxs.select("//div[@class='breadcrumb']/a/text()").extract()
        parent = parent_names[len(parent_names)-1]
+       parent = self.html_cleanup(parent)
+
        method_names = hxs.select("//h1[@id='title']/text()").extract()
        base_urls = hxs.select("//div[@class='odd']/text()").re("http.*")
        parameters = hxs.select("//div[@class='parameter']/span/text()").extract()
@@ -214,7 +223,7 @@ class DmozSpider(BaseSpider):
        obj["parameters"] = parameters
        obj["base_url"] = base_urls[0].strip()
        obj["required"] = updated_required_list
-       print "parent: %s" %(parent)
+       #print "parent: %s" %(parent)
        #print json.dumps(obj, sort_keys=True, indent=4)
        data = self.raw["TwitterAPI"]["API"]
        container = self.findParent(data, parent)
@@ -225,38 +234,40 @@ class DmozSpider(BaseSpider):
 
        
 
-   #def oldparse(self, response):
-   #    hxs = HtmlXPathSelector(response)
+   def parse2(self, response):
+       hxs = HtmlXPathSelector(response)
 
-   #    sites = hxs.select("//td[@class='views-field views-field-title']/a").re("href=\".*?\"")
-   #    descriptions = hxs.select("//caption/p/text()").extract()
-   #    self.sanitize(descriptions)
-   #    api_names = hxs.select("//caption/strong/text()").extract()
-   #    for i in range(0,len(descriptions)):
-   #        obj = {}
-   #        obj["name"]  = api_names[i]
-   #        obj["methods"] = []
-   #        obj["description"] =  descriptions[i]
+       sites = hxs.select("//td[@class='views-field views-field-title']/a").re("href=\".*?\"")
+       descriptions = hxs.select("//caption/p/text()").extract()
+       self.sanitize(descriptions)
+       api_names = hxs.select("//caption/strong/text()").extract()
 
-   #        self.raw["TwitterAPI"]["API"].append(obj)
-   #        #print obj
-   #    f = open('currentapi.json','w')
-   #    f.write(json.dumps(self.raw, sort_keys=True, indent=4))
-   #    f.close()
+       for i in range(0,len(descriptions)):
+           obj = {}
+           obj["name"] =  self.html_cleanup(api_names[i])
+           obj["methods"] = []
+           obj["description"] = HTMLParser.unescape.__func__(HTMLParser, descriptions[i].lower()) 
 
-   #    print "write new list of URLS to parse to urls.txt"
-   #    print "length of sites is: %s"%(str(len(sites)))
-   #    f = open('urls.txt','w')
-   #    for site in sites:
-   #        ndx = sites.index(site)
-   #        match = re.search("\".*\"", site)
-   #        if match == None:
-   #            sites.remove(site)
-   #        site = re.search("\".*\"", site).group().replace("\"","")
-   #        site = "https://dev.twitter.com%s"%(site)
-   #        #sites[ndx] = site
-   #        f.write(site + "\r\n")
+           self.raw["TwitterAPI"]["API"].insert(i, obj)
 
-   #    f.close()
+
+       f = open('currentapi.json','w')
+       f.write(json.dumps(self.raw, sort_keys=True, indent=4))
+       f.close()
+
+       print "write new list of URLS to parse to urls.txt"
+       print "length of sites is: %s"%(str(len(sites)))
+       f = open('urls.txt','w')
+       for site in sites:
+           ndx = sites.index(site)
+           match = re.search("\".*\"", site)
+           if match == None:
+               sites.remove(site)
+           site = re.search("\".*\"", site).group().replace("\"","")
+           site = "https://dev.twitter.com%s"%(site)
+           #sites[ndx] = site
+           f.write(site + "\r\n")
+
+       f.close()
 
 
