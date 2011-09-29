@@ -8,7 +8,6 @@ from HTMLParser import HTMLParser
 
 
 class DmozSpider(BaseSpider):
-   currentUrl = ""
    raw = {}  
    name = "dev.twitter.com"
    allowed_domains = ["dev.twitter.com"]
@@ -140,9 +139,6 @@ class DmozSpider(BaseSpider):
        #"https://dev.twitter.com/docs/api"
    ]
 
-   #def make_requests_from_url(self,url):
-   #    self.currentUrl = url
-   #    return BaseSpider.make_requests_from_url(url)
 
    def __init__(self):
        print "initializing"
@@ -199,7 +195,6 @@ class DmozSpider(BaseSpider):
 
 
    def parse(self, response):
-       print "processing : %s" %(self.currentUrl)
        hxs = HtmlXPathSelector(response)
 
        parent_names = hxs.select("//div[@class='breadcrumb']/a/text()").extract()
@@ -212,8 +207,12 @@ class DmozSpider(BaseSpider):
        parameters = hxs.select("//div[@class='parameter']/span/text()").extract()
        required_list = hxs.select("//div[@class='parameter']/span[@class='param']/span/text()").extract() 
        descriptions = hxs.select("//div[@class='parameter']/p/text()").extract()
+       param_descriptions = hxs.select("//div[@class='parameter']/p/text()").extract()
 
        self.sanitize(parameters)
+       self.sanitize(param_descriptions)
+       print len(parameters)
+       print len(param_descriptions)
        res = self.processRequired(required_list)
        updated_required_list = []
        if(len(res) > 0):
@@ -232,16 +231,19 @@ class DmozSpider(BaseSpider):
        obj["parameters"] = parameters
        obj["base_url"] = self.fixURL(base_urls[0].strip())
        obj["required"] = updated_required_list
+       obj["doc_url"] = response.url
        #print "parent: %s" %(parent)
        #print json.dumps(obj, sort_keys=True, indent=4)
        data = self.raw["TwitterAPI"]["API"]
        container = self.findParent(data, parent)
        container["methods"].append(obj)
-       print "# of objects inside methods is: %s" %(str(len(container["methods"])))
 
-       self.flush();
+       self.flush()
+
 
        
+   def close_spider(self, spider):
+      self.flush();
 
    def parse2(self, response):
        hxs = HtmlXPathSelector(response)
