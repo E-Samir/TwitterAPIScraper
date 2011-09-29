@@ -4,6 +4,7 @@ from scrapy.selector import HtmlXPathSelector
 import re
 import json
 from HTMLParser import HTMLParser
+import os,sys
 
 
 
@@ -171,9 +172,11 @@ class DmozSpider(BaseSpider):
 
    def processRequired(self, alist):
        required_list = [] 
+       ndx = 0
        for item in alist:
            if item.strip() == "required":
-               required_list.append(alist.index(item))
+               required_list.append(ndx)
+           ndx = ndx + 1
 
        return required_list
 
