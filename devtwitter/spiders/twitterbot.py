@@ -22,6 +22,7 @@ class DmozSpider(BaseSpider):
    raw = {}  
    name = "dev.twitter.com"
    allowed_domains = ["dev.twitter.com"]
+
    start_urls = [
        "https://dev.twitter.com/docs/api/1/get/statuses/home_timeline",
        "https://dev.twitter.com/docs/api/1/get/statuses/mentions",
@@ -148,6 +149,28 @@ class DmozSpider(BaseSpider):
        "https://dev.twitter.com/docs/api/1/post/%3Auser/lists/%3Aid",
        "https://dev.twitter.com/docs/api/post-accountupdate_location"
    ]
+   ##overrides list for testing
+   #start_urls = [
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/home_timeline",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/mentions",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/public_timeline",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/retweeted_by_me",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/retweeted_to_me",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/retweets_of_me",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/user_timeline",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/retweeted_to_user",
+   #    "https://dev.twitter.com/docs/get/statuses/retweeted_by_user",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/%3Aid/retweeted_by",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/%3Aid/retweeted_by/ids",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/retweets/%3Aid",
+   #    "https://dev.twitter.com/docs/api/1/get/statuses/show/%3Aid",
+   #    "https://dev.twitter.com/docs/api/1/post/statuses/destroy/%3Aid",
+   #    "https://dev.twitter.com/docs/api/1/post/statuses/retweet/%3Aid",
+   #    "https://dev.twitter.com/docs/api/1/post/statuses/update",
+   #    "https://dev.twitter.com/docs/api/1/post/statuses/update_with_media",
+   #    "https://dev.twitter.com/docs/api/1/get/search"
+   #]
+
 
    def strip_tags(self,html):
         s = MLStripper()
@@ -211,9 +234,13 @@ class DmozSpider(BaseSpider):
        key=""
        data = {} 
        for item in raw:
-           i = self.strip_tags(item)
+           i = self.strip_tags(item).lower()
            if(key == "auth"):
-               data["auth"] = i
+               if(i.find("yes") != -1):
+                   data["auth"] = True
+               else:
+                   data["auth"] = False
+
                key=""
                continue
            if(key == "formats"):
@@ -225,7 +252,10 @@ class DmozSpider(BaseSpider):
                key=""
                continue
            if(key == "rate"):
-               data["rate"] = i
+               if(i.find("yes") != -1):
+                   data["rate"] = True
+               else:
+                   data["rate"] = False
                key=""
                continue
            if(i.lower().find("authentication") != -1):
