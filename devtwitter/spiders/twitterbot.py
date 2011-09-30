@@ -7,6 +7,16 @@ from HTMLParser import HTMLParser
 import os,sys
 
 
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+
 
 class DmozSpider(BaseSpider):
    raw = {}  
@@ -137,19 +147,18 @@ class DmozSpider(BaseSpider):
        "https://dev.twitter.com/docs/api/1/post/%3Auser/lists",
        "https://dev.twitter.com/docs/api/1/post/%3Auser/lists/%3Aid",
        "https://dev.twitter.com/docs/api/post-accountupdate_location"
-       #"https://dev.twitter.com/docs/api"
    ]
 
+   def strip_tags(self,html):
+        s = MLStripper()
+        s.feed(html)
+        return s.get_data()
 
    def __init__(self):
        print "initializing"
-       f = open('/tmp/currentapi.json')
+       f = open('currentapi.json')
        data = f.read()
        self.raw = json.loads(data)
-
-       #self.raw = {} 
-       #self.raw["TwitterAPI"] = {} 
-       #self.raw["TwitterAPI"]["API"] = [] 
 
    def flush(self):
        f = open('final.json','w')
@@ -182,6 +191,7 @@ class DmozSpider(BaseSpider):
                return item
        return None
        #print "searching for: %s"%(parent_name)
+
    def html_cleanup(self,value):
        value = HTMLParser.unescape.__func__(HTMLParser, value.lower())
        value = value.replace("&", "and").replace(" ", "_")
@@ -189,7 +199,7 @@ class DmozSpider(BaseSpider):
 
 
    def fixURL(self, value):
-       value = value.replace(":user", "USER").replace(":list_id","LIST_ID").replace(":id", "ID").replace("format","json")
+       value = value.replace(":user", "USER").replace(":list_id","LIST_ID").replace(":id", "ID").replace("format","FORMAT")
        return value
 
    def fixName(self, value):
@@ -197,10 +207,57 @@ class DmozSpider(BaseSpider):
        return value
 
 
+   def process_resource(self, raw):
+       key=""
+       data = {} 
+       for item in raw:
+           i = self.strip_tags(item)
+           if(key == "auth"):
+               data["auth"] = i
+               key=""
+               continue
+           if(key == "formats"):
+               data["formats"] = i
+               key=""
+               continue
+           if(key == "http"):
+               data["http"] = i
+               key=""
+               continue
+           if(key == "rate"):
+               data["rate"] = i
+               key=""
+               continue
+           if(i.lower().find("authentication") != -1):
+               key="auth"
+           if(i.lower().find("formats") != -1):
+               key="formats"
+           if(i.lower().find("http methods") != -1):
+               key="http"
+           if(i.lower().find("rate") != -1):
+               key="rate"
+
+       if(data.has_key("formats")):
+           v= data["formats"]
+           if(v == ""):
+               data["formats"] = []
+           else:
+               v= v.lower().replace("json","json,").replace("xml","xml,").replace("rss","rss,").replace("atom","atom,")
+               if(v[len(v)-1] == ','):
+                   v= v[:len(v)-1]
+               ar= v.split(",")
+               data["formats"] = ar
+
+       return data
+
+
    def parse(self, response):
        hxs = HtmlXPathSelector(response)
 
        parent_names = hxs.select("//div[@class='breadcrumb']/a/text()").extract()
+       resource_info = hxs.select("//div[@class='block api-doc-block']/table/tbody/tr/td").extract()
+       data = self.process_resource(resource_info)
+
        parent = parent_names[len(parent_names)-1]
        parent = self.html_cleanup(parent)
 
@@ -210,12 +267,10 @@ class DmozSpider(BaseSpider):
        parameters = hxs.select("//div[@class='parameter']/span/text()").extract()
        required_list = hxs.select("//div[@class='parameter']/span[@class='param']/span/text()").extract() 
        descriptions = hxs.select("//div[@class='parameter']/p/text()").extract()
-       param_descriptions = hxs.select("//div[@class='parameter']/p/text()").extract()
+       #param_descriptions = hxs.select("//div[@class='parameter']/p/text()").extract()
 
        self.sanitize(parameters)
-       self.sanitize(param_descriptions)
-       print len(parameters)
-       print len(param_descriptions)
+       #self.sanitize(param_descriptions)
        res = self.processRequired(required_list)
        updated_required_list = []
        if(len(res) > 0):
@@ -235,6 +290,10 @@ class DmozSpider(BaseSpider):
        obj["base_url"] = self.fixURL(base_urls[0].strip())
        obj["required"] = updated_required_list
        obj["doc_url"] = response.url
+       obj["formats"] = data["formats"]
+       obj["require_auth"] = data["auth"]
+       obj["rate_limited"] = data["rate"]
+       
        #print "parent: %s" %(parent)
        #print json.dumps(obj, sort_keys=True, indent=4)
        data = self.raw["TwitterAPI"]["API"]
@@ -247,41 +306,4 @@ class DmozSpider(BaseSpider):
        
    def close_spider(self, spider):
       self.flush();
-
-   def parse2(self, response):
-       hxs = HtmlXPathSelector(response)
-
-       sites = hxs.select("//td[@class='views-field views-field-title']/a").re("href=\".*?\"")
-       descriptions = hxs.select("//caption/p/text()").extract()
-       self.sanitize(descriptions)
-       api_names = hxs.select("//caption/strong/text()").extract()
-
-       for i in range(0,len(descriptions)):
-           obj = {}
-           obj["name"] =  self.html_cleanup(api_names[i])
-           obj["methods"] = []
-           obj["description"] = HTMLParser.unescape.__func__(HTMLParser, descriptions[i].lower()) 
-
-           self.raw["TwitterAPI"]["API"].insert(i, obj)
-
-
-       f = open('currentapi.json','w')
-       f.write(json.dumps(self.raw, sort_keys=True, indent=4))
-       f.close()
-
-       print "write new list of URLS to parse to urls.txt"
-       print "length of sites is: %s"%(str(len(sites)))
-       f = open('urls.txt','w')
-       for site in sites:
-           ndx = sites.index(site)
-           match = re.search("\".*\"", site)
-           if match == None:
-               sites.remove(site)
-           site = re.search("\".*\"", site).group().replace("\"","")
-           site = "https://dev.twitter.com%s"%(site)
-           #sites[ndx] = site
-           f.write(site + "\r\n")
-
-       f.close()
-
 

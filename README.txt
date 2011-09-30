@@ -17,6 +17,8 @@ Run
 ---
 [source,bash]
 scrapy crawl dev.twitter.com 
+or
+scrapy runspider devtwitter/spiders/twitterbot.py 
 
 Interactive Shell
 -----------------
