@@ -87,32 +87,32 @@ class DmozSpider(BaseSpider):
        "https://dev.twitter.com/docs/api/1/post/lists/create",
        "https://dev.twitter.com/docs/api/1/get/lists",
        "https://dev.twitter.com/docs/api/1/get/lists/show",
-       #"https://dev.twitter.com/docs/api/1/get/account/rate_limit_status",
+       "https://dev.twitter.com/docs/api/1/get/account/rate_limit_status",
        "https://dev.twitter.com/docs/api/1/get/account/verify_credentials",
-       #"https://dev.twitter.com/docs/api/1/post/account/end_session",
+       "https://dev.twitter.com/docs/api/1/post/account/end_session",
        "https://dev.twitter.com/docs/api/1/post/account/update_delivery_device",
        "https://dev.twitter.com/docs/api/1/post/account/update_profile",
        "https://dev.twitter.com/docs/api/1/post/account/update_profile_background_image",
        "https://dev.twitter.com/docs/api/1/post/account/update_profile_colors",
        "https://dev.twitter.com/docs/api/1/post/account/update_profile_image",
-       #"https://dev.twitter.com/docs/api/1/get/account/totals",
-       #"https://dev.twitter.com/docs/api/1/get/account/settings",
+       "https://dev.twitter.com/docs/api/1/get/account/totals",
+       "https://dev.twitter.com/docs/api/1/get/account/settings",
        "https://dev.twitter.com/docs/api/1/post/account/settings",
        "https://dev.twitter.com/docs/api/1/post/notifications/follow",
        "https://dev.twitter.com/docs/api/1/post/notifications/leave",
-       #"https://dev.twitter.com/docs/api/1/get/saved_searches",
+       "https://dev.twitter.com/docs/api/1/get/saved_searches",
        "https://dev.twitter.com/docs/api/1/get/saved_searches/show/%3Aid",
        "https://dev.twitter.com/docs/api/1/post/saved_searches/create",
        "https://dev.twitter.com/docs/api/1/post/saved_searches/destroy/%3Aid",
        "https://dev.twitter.com/docs/api/1/get/trends/%3Awoeid",
        "https://dev.twitter.com/docs/api/1/get/trends/available",
        "https://dev.twitter.com/docs/api/1/get/geo/id/%3Aplace_id",
-       #"https://dev.twitter.com/docs/api/1/get/geo/nearby_places",
+       "https://dev.twitter.com/docs/api/1/get/geo/nearby_places",
        "https://dev.twitter.com/docs/api/1/get/geo/reverse_geocode",
        "https://dev.twitter.com/docs/api/1/get/geo/search",
        "https://dev.twitter.com/docs/api/1/get/geo/similar_places",
        "https://dev.twitter.com/docs/api/1/post/geo/place",
-       #"https://dev.twitter.com/docs/api/1/get/trends",
+       "https://dev.twitter.com/docs/api/1/get/trends",
        "https://dev.twitter.com/docs/api/1/get/trends/current",
        "https://dev.twitter.com/docs/api/1/get/trends/daily",
        "https://dev.twitter.com/docs/api/1/get/trends/weekly",
@@ -126,7 +126,7 @@ class DmozSpider(BaseSpider):
        "https://dev.twitter.com/docs/api/1/get/oauth/authorize",
        "https://dev.twitter.com/docs/api/1/post/oauth/access_token",
        "https://dev.twitter.com/docs/api/1/post/oauth/request_token",
-       #"https://dev.twitter.com/docs/api/1/get/help/test",
+       "https://dev.twitter.com/docs/api/1/get/help/test",
        "https://dev.twitter.com/docs/api/1/delete/%3Auser/%3Alist_id/members",
        "https://dev.twitter.com/docs/api/1/delete/%3Auser/%3Alist_id/subscribers",
        "https://dev.twitter.com/docs/api/1/delete/%3Auser/lists/%3Aid",
@@ -315,7 +315,11 @@ class DmozSpider(BaseSpider):
        else:
            obj["require_post"] = False
 
-       obj["description"] = descriptions[0].strip()
+       if(len(descriptions) > 0):
+          obj["description"] = descriptions[0].strip()
+       else:
+          obj["description"] = ""
+
        obj["parameters"] = parameters
        obj["base_url"] = self.fixURL(base_urls[0].strip())
        obj["required"] = updated_required_list
