@@ -1,3 +1,9 @@
+# DEPRECATED.
+
+This project was used to scrape dev.twiter.com for API definition.  The page changed singificantly and this project is highly unlikely to work.  The code is left it for legacy purposes.
+
+
+
 TwitterAPIScraper
 ================
 
@@ -27,5 +33,7 @@ Interactive Shell
 scrapy shell https://dev.twitter.com/docs/api  
 scrapy shell https://dev.twitter.com/docs/api/1/get/statuses/home_timeline
 echo "booh"
+
+
 
 
